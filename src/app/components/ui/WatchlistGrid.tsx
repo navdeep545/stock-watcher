@@ -7,12 +7,14 @@ interface WatchlistGridProps {
 }
 
 export default function WatchlistGrid({ items, onRemoveStock }: WatchlistGridProps) {
+  console.log("Watchlist items:", items); // Debugging step
+
+  if (!Array.isArray(items)) {
+    return <div className="text-center py-8 text-red-500">Error: Watchlist data is invalid.</div>;
+  }
+
   if (items.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        No stocks in your watchlist. Add some stocks to get started!
-      </div>
-    );
+    return <div className="text-center py-8 text-gray-500">No stocks in your watchlist.</div>;
   }
 
   return (
@@ -27,3 +29,4 @@ export default function WatchlistGrid({ items, onRemoveStock }: WatchlistGridPro
     </div>
   );
 }
+
