@@ -1,4 +1,3 @@
-import { db } from '@vercel/postgres';
 import { WatchlistItem } from '../types';
 import { getDbClient,closeDbClient } from './db';
 /**
@@ -80,7 +79,7 @@ export async function addToWatchlist(email: string, symbol: string): Promise<Wat
     throw error;
   }
   finally {
-    client.release();
+    closeDbClient(client);
   }
 }
 
@@ -105,6 +104,6 @@ export async function removeFromWatchlist(email: string, stockId: string): Promi
     console.error('❌ Error removing from watchlist:', error);
     throw error;
   } finally {
-    client.release();
+    closeDbClient(client);
   }
 }
