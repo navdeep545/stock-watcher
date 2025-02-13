@@ -1,24 +1,78 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+// import 'dotenv/config';
+import { useState, useEffect, useCallback } from 'react';
+import { Search } from 'lucide-react';
 
 interface AddStockModalProps {
   onAdd: (symbol: string) => void;
   onClose: () => void;
 }
 
+interface StockSuggestion {
+  symbol: string;
+  name: string;
+  currency: string;
+  stockExchange: string;
+}
+
 export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
   const [symbol, setSymbol] = useState('');
+  const [suggestions, setSuggestions] = useState<StockSuggestion[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle form submission
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedSymbol = symbol.trim().toUpperCase();
-    if (!trimmedSymbol) return;
+  // Debounced fetch function
+  const debouncedFetch = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
 
-    onAdd(trimmedSymbol);
-    setSymbol(''); // Clear input field
-    onClose(); // Close modal after adding
+      return (query: string) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+
+        return new Promise((resolve) => {
+          timeoutId = setTimeout(() => {
+            resolve(query);
+          }, 300); // 300ms delay
+        });
+      };
+    })(),
+    []
+  );
+
+
+  const fetchSuggestions = async (query: string) => {
+    if (!query || query.length < 1) {
+      setSuggestions([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Wait for debounce
+      await debouncedFetch(query);
+      
+      const response = await fetch(
+        `https://financialmodelingprep.com/api/v3/search?query=${query}&apikey=${process.env.FINANCIAL_MODELING_PREP_API_KEY}`
+      );
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch suggestions');
+      }
+      
+      const data = await response.json();
+      console.log(data);
+      setSuggestions(data.slice(0, 5));
+    } catch {
+      setError('Failed to fetch suggestions');
+      setSuggestions([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Close modal when Escape key is pressed
@@ -32,20 +86,72 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedSymbol = symbol.trim().toUpperCase();
+    if (!trimmedSymbol) return;
+
+    onAdd(trimmedSymbol);
+    setSymbol('');
+    onClose();
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.toUpperCase();
+    setSymbol(value);
+    fetchSuggestions(value);
+  };
+
+  const handleSuggestionClick = (suggestion: StockSuggestion) => {
+    onAdd(suggestion.symbol);
+    setSymbol('');
+    onClose();
+  };
+
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
         <h2 className="text-xl font-bold mb-4">Add Stock to Watchlist</h2>
         <form onSubmit={handleSubmit}>
-          <input
-            type="text"
-            value={symbol}
-            onChange={(e) => setSymbol(e.target.value)}
-            placeholder="Enter stock symbol (e.g., AAPL)"
-            className="w-full p-2 border rounded mb-4"
-            aria-label="Stock Symbol Input"
-            autoFocus // Auto-focus input on modal open
-          />
+          <div className="relative mb-4">
+            <input
+              type="text"
+              value={symbol}
+              onChange={handleInputChange}
+              placeholder="Enter stock symbol (e.g., AAPL)"
+              className="w-full p-2 border rounded"
+              aria-label="Stock Symbol Input"
+              autoFocus
+            />
+            <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
+            
+            {loading && (
+              <div className="mt-2 text-sm text-gray-600">Loading suggestions...</div>
+            )}
+            
+            {error && (
+              <div className="mt-2 text-sm text-red-500">{error}</div>
+            )}
+
+            {suggestions.length > 0 && (
+              <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg">
+                {suggestions.map((suggestion) => (
+                  <li
+                    key={suggestion.symbol}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="p-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
+                  >
+                    <div className="flex justify-between items-center">
+                      <span className="font-medium">{suggestion.symbol}</span>
+                      <span className="text-sm text-gray-600">{suggestion.name}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
           <div className="flex justify-end gap-2">
             <button
               type="button"
@@ -62,7 +168,7 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
                   ? 'bg-blue-500 hover:bg-blue-600'
                   : 'bg-gray-300 cursor-not-allowed'
               }`}
-              disabled={!symbol.trim()} // Disable if input is empty
+              disabled={!symbol.trim()}
               aria-label="Confirm Add Stock"
             >
               Add
