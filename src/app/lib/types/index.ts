@@ -16,3 +16,16 @@ export type WatchlistItem = {
   stock_id: string;
   symbol: string;
 };
+
+// New interfaces for price data
+export interface PriceResponse {
+  price: string;
+}
+
+export interface StockWithPrice extends Stock {
+  price?: string;  // Optional price that's fetched in real-time
+}
+
+export interface WatchlistItemWithPrice extends WatchlistItem {
+  price?: string;  // Optional price that's fetched in real-time
+}
