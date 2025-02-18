@@ -1,12 +1,15 @@
+// ui/addstockmodal.tsx
+
 'use client';
 
-// import 'dotenv/config';
+import 'dotenv/config';
 import { useState, useEffect, useCallback } from 'react';
 import { Search } from 'lucide-react';
 
 interface AddStockModalProps {
   onAdd: (symbol: string) => void;
   onClose: () => void;
+  watchlist: string[];
 }
 
 interface StockSuggestion {
@@ -16,10 +19,11 @@ interface StockSuggestion {
   stockExchange: string;
 }
 
-export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
+
+export default function AddStockModal({ onAdd, onClose,watchlist }: AddStockModalProps) {
   const [symbol, setSymbol] = useState('');
   const [suggestions, setSuggestions] = useState<StockSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
+  // const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Debounced fetch function
@@ -50,14 +54,16 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
     }
 
     try {
-      setLoading(true);
+      // setLoading(true);
       setError(null);
       
       // Wait for debounce
       await debouncedFetch(query);
       
       const response = await fetch(
-        `https://financialmodelingprep.com/api/v3/search?query=${query}&apikey=${process.env.FINANCIAL_MODELING_PREP_API_KEY}`
+        // `https://financialmodelingprep.com/api/v3/search?query=${query}&apikey=ffKCoecQGIlnpGCjGjrnBJDdF0rjMReX`
+        // `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${query}&apikey=YOSD45O2747TAZ17`
+        `https://api.twelvedata.com/symbol_search?symbol=${query}` 
       );
       
       if (!response.ok) {
@@ -71,7 +77,7 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
       setError('Failed to fetch suggestions');
       setSuggestions([]);
     } finally {
-      setLoading(false);
+      // setLoading(false);
     }
   };
 
@@ -91,14 +97,22 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
     const trimmedSymbol = symbol.trim().toUpperCase();
     if (!trimmedSymbol) return;
 
+    // Check if stock already exists
+    if (watchlist.includes(trimmedSymbol)) {
+      setError('This stock is already in your watchlist');
+      return;
+    }
+
     onAdd(trimmedSymbol);
     setSymbol('');
     onClose();
   };
+  
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
     setSymbol(value);
+    setError(null);
     fetchSuggestions(value);
   };
 
@@ -112,23 +126,26 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg w-96 shadow-lg">
-        <h2 className="text-xl font-bold mb-4">Add Stock to Watchlist</h2>
+        {/* <h2 className="text-xl font-bold mb-4">Add Stock to Watchlist</h2>
+         */}
+         <h2 className="text-xl font-bold mb-4 text-gray-900">Add Stock to Watchlist</h2>
         <form onSubmit={handleSubmit}>
           <div className="relative mb-4">
-            <input
-              type="text"
-              value={symbol}
-              onChange={handleInputChange}
-              placeholder="Enter stock symbol (e.g., AAPL)"
-              className="w-full p-2 border rounded"
-              aria-label="Stock Symbol Input"
-              autoFocus
-            />
+          <input
+            type="text"
+            value={symbol}
+            onChange={handleInputChange}
+            placeholder="Enter stock symbol (e.g., AAPL)"
+            className="w-full p-2 border rounded text-black placeholder-gray-500"
+            aria-label="Stock Symbol Input"
+            autoFocus
+          />
+
             <Search className="absolute right-3 top-2.5 text-gray-400" size={20} />
             
-            {loading && (
+            {/* {loading && (
               <div className="mt-2 text-sm text-gray-600">Loading suggestions...</div>
-            )}
+            )} */}
             
             {error && (
               <div className="mt-2 text-sm text-red-500">{error}</div>
@@ -136,19 +153,20 @@ export default function AddStockModal({ onAdd, onClose }: AddStockModalProps) {
 
             {suggestions.length > 0 && (
               <ul className="absolute z-10 w-full bg-white border rounded-lg mt-1 shadow-lg">
-                {suggestions.map((suggestion) => (
-                  <li
-                    key={suggestion.symbol}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="p-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0"
-                  >
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{suggestion.symbol}</span>
-                      <span className="text-sm text-gray-600">{suggestion.name}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {suggestions.map((suggestion) => (
+                <li
+                  key={suggestion.symbol}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="p-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0 text-gray-900"
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium">{suggestion.symbol}</span>
+                    <span className="text-sm text-gray-700">{suggestion.name}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+            
             )}
           </div>
 

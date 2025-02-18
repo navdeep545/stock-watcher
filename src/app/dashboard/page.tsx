@@ -1,3 +1,5 @@
+// dashboard/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -32,17 +34,40 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       setError(null);
+  
+      // Check if the stock already exists in the watchlist
+      if (watchlist.some(stock => stock.symbol === symbol)) {
+        setError(`Stock ${symbol} is already in the watchlist.`);
+        setLoading(false);
+        return;
+      }
+  
+      const validationResponse = await fetch(
+        // `https://financialmodelingprep.com/api/v3/search?query=${symbol}&apikey=ffKCoecQGIlnpGCjGjrnBJDdF0rjMReX`
+        // `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${symbol}&apikey=YOSD45O2747TAZ17`
+        `https://api.twelvedata.com/symbol_search?symbol=${symbol}`
+      );
+      const validationData = await validationResponse.json();
+  
+      if (!validationData.length) {
+        setError(`Stock ${symbol} not found.`);
+        setLoading(false);
+        return;
+      }
+  
       const response = await fetch('/api/watchlist', {
         method: 'POST',
         body: JSON.stringify({ symbol }),
         headers: { 'Content-Type': 'application/json' },
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to add stock');
+        const errorMessage = await response.text();
+        console.error('Failed to add stock:', errorMessage);
+        throw new Error(`Failed to add stock: ${errorMessage}`);
       }
-
-      await fetchWatchlist(); // Refresh watchlist
+  
+      await fetchWatchlist();
       setIsAddModalOpen(false);
     } catch (error) {
       setError('Error adding stock');
@@ -51,6 +76,7 @@ export default function DashboardPage() {
       setLoading(false);
     }
   };
+  
 
   const handleRemoveStock = async (stockId: string) => {
     try {
@@ -90,14 +116,14 @@ export default function DashboardPage() {
 
       {error && <p className="text-red-500">{error}</p>} {/* Show error message */}
       
-      {loading && <p>Loading watchlist...</p>}
+      {/* {loading && <p>Loading watchlist...</p>} */}
       
       {!loading && watchlist.length === 0 && <p>No stocks in your watchlist.</p>}
 
       <WatchlistGrid items={watchlist} onRemoveStock={handleRemoveStock} />
 
       {isAddModalOpen && (
-        <AddStockModal onAdd={handleAddStock} onClose={() => setIsAddModalOpen(false)} />
+        <AddStockModal onAdd={handleAddStock} onClose={() => setIsAddModalOpen(false)}  watchlist={watchlist.map(stock => stock.symbol)} />
       )}
     </div>
   );
