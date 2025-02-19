@@ -1,5 +1,4 @@
 import bcrypt from 'bcrypt';
-import { db } from '@vercel/postgres';
 import { User } from '../types';
 import { getDbClient,closeDbClient } from './db';
 
