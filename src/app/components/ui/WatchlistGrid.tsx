@@ -16,7 +16,7 @@ export default function WatchlistGrid({ items, onRemoveStock }: WatchlistGridPro
       
       for (const item of items) {
         try {
-          const response = await fetch(`https://api.twelvedata.com/price?symbol=${item.symbol}&apikey=8b5889773a4a44ae9c7955d43fa236b0`);
+          const response = await fetch(`https://api.twelvedata.com/price?symbol=${item.symbol}&apikey=${process.env.NEXT_PUBLIC_TWELVEDATA_API_KEY}`);
           if (response.ok) {
             const data = await response.json();
             newPrices[item.symbol] = data.price;

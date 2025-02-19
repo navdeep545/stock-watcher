@@ -42,18 +42,18 @@ export default function DashboardPage() {
         return;
       }
   
-      const validationResponse = await fetch(
-        // `https://financialmodelingprep.com/api/v3/search?query=${symbol}&apikey=ffKCoecQGIlnpGCjGjrnBJDdF0rjMReX`
-        // `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${symbol}&apikey=YOSD45O2747TAZ17`
-        `https://api.twelvedata.com/symbol_search?symbol=${symbol}`
-      );
-      const validationData = await validationResponse.json();
+      // const validationResponse = await fetch(
+      //   // `https://financialmodelingprep.com/api/v3/search?query=${symbol}&apikey=ffKCoecQGIlnpGCjGjrnBJDdF0rjMReX`
+      //   // `https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${symbol}&apikey=YOSD45O2747TAZ17`
+      //   `https://api.twelvedata.com/symbol_search?symbol=${symbol}`
+      // );
+      // const validationData = await validationResponse.json();
   
-      if (!validationData.length) {
-        setError(`Stock ${symbol} not found.`);
-        setLoading(false);
-        return;
-      }
+      // if (!validationData.length) {
+      //   setError(`Stock ${symbol} not found.`);
+      //   setLoading(false);
+      //   return;
+      // }
   
       const response = await fetch('/api/watchlist', {
         method: 'POST',
